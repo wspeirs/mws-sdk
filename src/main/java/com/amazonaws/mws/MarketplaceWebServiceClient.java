@@ -29,8 +29,10 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.security.DigestInputStream;
@@ -71,14 +73,27 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.params.HttpClientParams;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.params.ConnRoutePNames;
+import org.apache.http.conn.routing.HttpRoute;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.CoreProtocolPNames;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.params.SyncBasicHttpParams;
+import org.apache.http.protocol.HttpContext;
 
 import com.amazonaws.mws.model.CancelFeedSubmissionsRequest;
 import com.amazonaws.mws.model.CancelFeedSubmissionsResponse;
@@ -145,7 +160,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
     private String awsAccessKeyId = null;
     private String awsSecretAccessKey = null;
     private MarketplaceWebServiceConfig config = null;
-    private HttpClient httpClient = null;
+    private DefaultHttpClient httpClient = null;
     private ExecutorService asyncExecutor;
     
     private List<Header> defaultHeaders = new ArrayList<Header>();
@@ -1876,12 +1891,12 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
      * from MarketplaceWebServiceConfig instance
      *
      */
-    private HttpClient configureHttpClient(
+    private DefaultHttpClient configureHttpClient(
     		String applicationName,
     		String applicationVersion) {
 
         /* Set http client parameters */
-        HttpClientParams httpClientParams = new HttpClientParams();
+        HttpParams httpClientParams = new SyncBasicHttpParams();
         
         // respect a user-provided User-Agent header as-is, but if none is provided
         // then generate one satisfying the MWS User-Agent requirements
@@ -1901,55 +1916,57 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
         			quoteAttributeName("MWSClientVersion"), 
         			quoteAttributeValue(mwsClientLibraryVersion));
         }
- 
-        defaultHeaders.add(new BasicHeader("X-Amazon-User-Agent", config.getUserAgent()));
-        httpClientParams.setParameter(HttpClientParams.USER_AGENT, config.getUserAgent());
-        httpClientParams.setParameter(HttpClientParams.RETRY_HANDLER, new DefaultHttpMethodRetryHandler() {
-        	@Override
-            public boolean retryMethod(HttpMethod method, IOException exception,
-            		int executionCount) {
-        		return super.retryMethod(method, exception, executionCount)
-            		&& !(exception instanceof UnknownHostException)
-            		&& !(exception instanceof InterruptedIOException);
-            }
-         });
-        
-        /* Set host configuration */
-        HostConfiguration hostConfiguration = new HostConfiguration();
 
-        /* Set connection manager parameters */
-        HttpConnectionManagerParams connectionManagerParams = new HttpConnectionManagerParams();
-        connectionManagerParams.setConnectionTimeout(config.getConnectionTimeout());
-        connectionManagerParams.setSoTimeout(config.getSoTimeout());
-        connectionManagerParams.setStaleCheckingEnabled(true);
-        connectionManagerParams.setTcpNoDelay(true);
-        connectionManagerParams.setMaxTotalConnections(config.getMaxAsyncQueueSize());
-        connectionManagerParams.setMaxConnectionsPerHost(hostConfiguration, config.getMaxAsyncQueueSize());
+        /* Setup connection parameters */
+        defaultHeaders.add(new BasicHeader("X-Amazon-User-Agent", config.getUserAgent()));
+        httpClientParams.setParameter(CoreProtocolPNames.USER_AGENT, config.getUserAgent());
+        HttpConnectionParams.setConnectionTimeout(httpClientParams, config.getConnectionTimeout());
+        HttpConnectionParams.setSoTimeout(httpClientParams, config.getSoTimeout());
+        HttpConnectionParams.setStaleCheckingEnabled(httpClientParams, true);
+        HttpConnectionParams.setTcpNoDelay(httpClientParams, true);
+        
 
         /* Set connection manager */
         PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
-        connectionManager.setParams(connectionManagerParams);
+        
+		try {
+			HttpRoute route = new HttpRoute(new HttpHost(new URL(config.getServiceURL()).getHost()));
+	        connectionManager.setMaxPerRoute(route, config.getMaxAsyncQueueSize());
+		} catch (MalformedURLException e) {
+			log.warn("Service URL is malformed: " + e.getMessage());
+		}
+		
+        connectionManager.setMaxTotal(config.getMaxAsyncQueueSize());
 
         /* Set http client */
-        httpClient = new DefaultHttpClient(httpClientParams, connectionManager);
+        httpClient = new DefaultHttpClient(connectionManager, httpClientParams);
+        
+        httpClient.setHttpRequestRetryHandler(new StandardHttpRequestRetryHandler() {
+        	@Override
+			public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
+				return super.retryRequest(exception, executionCount, context)
+					&& !(exception instanceof UnknownHostException)
+					&& !(exception instanceof InterruptedIOException);
+        	}
+         });
 
         /* Set proxy if configured */
         if (config.isSetProxyHost() && config.isSetProxyPort()) {
             log.info("Configuring Proxy. Proxy Host: " + config.getProxyHost() +
                     "Proxy Port: " + config.getProxyPort() );
-            hostConfiguration.setProxy(config.getProxyHost(), config.getProxyPort());
-            if (config.isSetProxyUsername() &&   config.isSetProxyPassword()) {
-                httpClient.getState().setProxyCredentials (new AuthScope(
-                                          config.getProxyHost(),
-                                          config.getProxyPort()),
-                                          new UsernamePasswordCredentials(
-                                              config.getProxyUsername(),
-                                              config.getProxyPassword()));
-
+        
+            httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY,
+            		                            new HttpHost(config.getProxyHost(), config.getProxyPort()));
+            
+            if (config.isSetProxyUsername() && config.isSetProxyPassword()) {
+            	
+            	httpClient.getCredentialsProvider().setCredentials(
+            			new AuthScope(config.getProxyHost(), config.getProxyPort()),
+            			new UsernamePasswordCredentials(config.getProxyUsername(), config.getProxyPassword()));
+            	
             }
         }
 
-        httpClient.setHostConfiguration(hostConfiguration);
         return httpClient;
     }
     
@@ -2010,7 +2027,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
         ResponseHeaderMetadata responseHeaderMetadata = null;
         Method responseHeaderMetadataSetter = null;
         
-        PostMethod method = null;
+        HttpPost method = null;
         
         try {
 
@@ -2020,6 +2037,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
                 throw new MarketplaceWebServiceException("Missing serviceUrl configuration value. You may obtain a list of valid MWS URLs by consulting the MWS Developer's Guide, or reviewing the sample code published along side this library.", -1, "InvalidServiceUrl", "Sender", null,  null, null) {
                 };
             }
+            
             // SubmitFeed will be the only MWS API function that will stream requests to the server.
             if( request instanceof SubmitFeedRequest ) {
                 
@@ -2027,38 +2045,37 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
                 // are contained within the HTTP header
                 SubmitFeedRequest sfr = (SubmitFeedRequest)request;
                 
-                method = new PostMethod( config.getServiceURL() + "?" + getSubmitFeedUrlParameters( parameters ) );
+                method = new HttpPost( config.getServiceURL() + "?" + getSubmitFeedUrlParameters( parameters ) );
                 
-                method.setRequestEntity( new InputStreamRequestEntity( sfr.getFeedContent() ));
-                method.setContentChunked( true );
+                method.setEntity(new InputStreamEntity(sfr.getFeedContent(), -1));
                 
                 String contentMD5 = sfr.getContentMD5();
 
                 if(contentMD5!=null) {
-                	method.addRequestHeader(new Header("Content-MD5", contentMD5));
+                	method.addHeader(new BasicHeader("Content-MD5", contentMD5));
                 }               
 
                 /* Set content type and encoding - encoding and charset are ignored right now because
                  * octet-stream is the only supported transport of MWS feeds. */
-                method.addRequestHeader(new Header("Content-Type", sfr.getContentType().toString()));
+                method.addHeader(new BasicHeader("Content-Type", sfr.getContentType().toString()));
                 
                 for(Header head: defaultHeaders) {
-                	method.addRequestHeader(head);
+                	method.addHeader(head);
                 }
                 
       
             }
             else {
-                method = new PostMethod(config.getServiceURL());
+                method = new HttpPost(config.getServiceURL());
                 log.debug("Adding required parameters...");
-                addRequiredParametersToRequest(method, parameters);               
+                method.setEntity(createEntity(parameters));               
 
                 /* Set content type and encoding */
                 log.debug("Setting content-type to application/x-www-form-urlencoded; charset=" + DEFAULT_ENCODING.toLowerCase());
-                method.addRequestHeader(new Header("Content-Type", "application/x-www-form-urlencoded; charset=" + DEFAULT_ENCODING.toLowerCase()));
+                method.addHeader(new BasicHeader("Content-Type", "application/x-www-form-urlencoded; charset=" + DEFAULT_ENCODING.toLowerCase()));
                 
                 for(Header head: defaultHeaders) {
-                	method.addRequestHeader(head);
+                	method.addHeader(head);
                 }
                 
                 log.debug("Done adding additional required parameters. Parameters now: " + parameters);
@@ -2070,7 +2087,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
             throw new MarketplaceWebServiceException( t );
         }
         
-        int status = -1;
+        HttpResponse httpResponse = null;
 
         log.debug("Invoking" + actionName + " request. Current parameters: " + parameters);
         try {
@@ -2082,9 +2099,9 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
                 try {
 
                     /* Submit request */
-                    status = httpClient.executeMethod(method);
+                    httpResponse = httpClient.execute(method);
 
-                    responseHeaderMetadata = getResponseHeaderMetadata(method);
+                    responseHeaderMetadata = getResponseHeaderMetadata(httpResponse);
                     
                     // GetFeedSubmissionResult and GetReport will be the only MWS API functions that will stream
                     // server responses.
@@ -2092,14 +2109,15 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
                     
                     if( !isStreamingResponse ) {
                         // SubmitFeed
-                        responseBodyString = getResponsBodyAsString(method.getResponseBodyAsStream());
+                        responseBodyString = getResponsBodyAsString(httpResponse.getEntity().getContent());
                         assert( responseBodyString != null );
                     }
                     
                     /* Successful response. Attempting to unmarshal into the <Action>Response type */
-                    if (status == HttpStatus.SC_OK && responseBodyString != null) {
+                    if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK &&
+                    	responseBodyString != null) {
                         shouldRetry = false;
-                        log.debug("Received Response. Status: " + status + ". " +
+                        log.debug("Received Response. Status: " + httpResponse + ". " +
                                 "Response Body: " + responseBodyString);
 
                         log.debug("Attempting to unmarshal into the " + actionName + "Response type...");
@@ -2109,7 +2127,8 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
                         log.debug("Unmarshalled response into " + actionName + "Response type.");
 
                     } 
-                    else if (status == HttpStatus.SC_OK && isStreamingResponse ) {
+                    else if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK &&
+                    		 isStreamingResponse ) {
                         
                         Method outputStreamGetter = null;
                         for( Method m : request.getClass().getMethods() ) {
@@ -2129,7 +2148,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
                         // wrapper to the XML response.
                         String requestIdFromHeader = null;
                         {
-                            Header header = method.getResponseHeader("x-amz-request-id");
+                            Header header = httpResponse.getFirstHeader("x-amz-request-id");
                             if(header!=null) {requestIdFromHeader = header.getValue();}
                             // Avoid use of the JDK-1.6-only isEmpty() call.
                             if(requestIdFromHeader==null || requestIdFromHeader.length()==0) {
@@ -2141,11 +2160,11 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
                         
                         String returnedContentMD5 = null;
                         {
-                            Header header = method.getResponseHeader("Content-MD5");
+                            Header header = httpResponse.getFirstHeader("Content-MD5");
                             if(header!=null) {returnedContentMD5 = header.getValue();}
                         }
                         
-                        copyResponseToOutputStream(method.getResponseBodyAsStream(), os);
+                        copyResponseToOutputStream(httpResponse.getEntity().getContent(), os);
                         
                         // Streaming-response-as-unnamed-body responses from MWS
                         // must also carry a Content-MD5 header and it must
@@ -2182,13 +2201,13 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
 
                         if( isStreamingResponse ) {
                             // Response body contains error message.
-                            responseBodyString = getResponsBodyAsString(method.getResponseBodyAsStream());
+                            responseBodyString = getResponsBodyAsString(httpResponse.getEntity().getContent());
                         }
                         
 
-                        log.debug("Received Response. Status: " + status + "." );
+                        log.debug("Received Response. Status: " + httpResponse + "." );
 
-                        if (status == HttpStatus.SC_INTERNAL_SERVER_ERROR
+                        if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_INTERNAL_SERVER_ERROR
                         		&& !(request instanceof SubmitFeedRequest)
                         		&& pauseIfRetryNeeded(++retries)){
                             shouldRetry = true;
@@ -2200,7 +2219,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
 
                             com.amazonaws.mws.model.Error error = errorResponse.getError().get(0);
                             
-                            if(status == HttpStatus.SC_SERVICE_UNAVAILABLE  
+                            if(httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_SERVICE_UNAVAILABLE  
                             		&& !(error.getCode().equals("RequestThrottled"))
                             		&& !(request instanceof SubmitFeedRequest)
                             		&& pauseIfRetryNeeded(++retries)) {
@@ -2211,7 +2230,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
                             		(((request instanceof SubmitFeedRequest) && (error.getType().equals("Receiver")))? 
                             			error.getMessage() + " [Cannot retry SubmitFeed request: must reset InputStream to retry.]" : 
                             			error.getMessage()),
-                                    status,
+                                    httpResponse.getStatusLine().getStatusCode(),
                                     error.getCode(),
                                     error.getType(),
                                     errorResponse.getRequestId(),
@@ -2228,7 +2247,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
                     log.debug("Response cannot be unmarshalled neither as " + actionName + "Response or ErrorResponse types." +
                             "Checking for other possible errors.");
 
-                    MarketplaceWebServiceException awse = processErrors(responseBodyString, status, responseHeaderMetadata);
+                    MarketplaceWebServiceException awse = processErrors(responseBodyString, httpResponse.getStatusLine().getStatusCode(), responseHeaderMetadata);
 
                     throw awse;
 
@@ -2254,10 +2273,10 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
         return response;
     }
 
-    private ResponseHeaderMetadata getResponseHeaderMetadata(PostMethod method) {
-      Header requestId = method.getResponseHeader("x-mws-request-id"); 
-      Header responseContext = method.getResponseHeader("x-mws-response-context");
-      Header timestamp = method.getResponseHeader("x-mws-timestamp");
+    private ResponseHeaderMetadata getResponseHeaderMetadata(HttpResponse response) {
+      Header requestId = response.getFirstHeader("x-mws-request-id"); 
+      Header responseContext = response.getFirstHeader("x-mws-response-context");
+      Header timestamp = response.getFirstHeader("x-mws-timestamp");
 
       return new ResponseHeaderMetadata(
         requestId != null ? requestId.getValue() : null,
@@ -2325,15 +2344,24 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
     /**
      * Add authentication related and version parameter and set request body
      * with all of the parameters
+     * @throws SignatureException 
+     * @throws UnsupportedEncodingException 
      */
-    private void addRequiredParametersToRequest(PostMethod method, Map<String, String> parameters)
-            throws SignatureException {
+    private UrlEncodedFormEntity createEntity(Map<String, String> parameters) throws SignatureException, UnsupportedEncodingException {
         addRequiredParameters(parameters);
+        List<NameValuePair> nvpl = new ArrayList<NameValuePair>();
+        
         for (Entry<String, String> entry : parameters.entrySet()) {
             String key = entry.getKey()==null ? "" : entry.getKey();
             String value = entry.getValue()==null ? "" : entry.getValue();
-            method.addParameter(key, value);
+            nvpl.add(new BasicNameValuePair(key, value));
         }
+        
+        UrlEncodedFormEntity ret = new UrlEncodedFormEntity(nvpl);
+        
+        ret.setChunked(true);
+        
+        return ret;
     }
 
     private MarketplaceWebServiceException processErrors(String responseString, int status, ResponseHeaderMetadata metadata)  {
@@ -2465,28 +2493,22 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
     }
     
     private static boolean usesHttps(String url) {
-        try {
-            new HttpsURL(url) /* throws an exception if not HTTPS */;
-            return true;
-        } catch (URIException e) {
-            return false;
-        }
+    	return !url.startsWith("https");
     }
 
     private static int extractPortNumber(String url, boolean usesHttps) {
-        try {
-            HttpURL httpUrl = usesHttps ? new HttpsURL(url) : new HttpURL(url);
-            return httpUrl.getPort();
-        } catch (URIException e) {
+    	try {
+			return new URL(url).getPort();
+		} catch (MalformedURLException e) {
             throw new RuntimeException("not a URL", e);
-        }
+		}
     }
 
     private static boolean usesAStandardPort(String url) {
         boolean usesHttps = usesHttps(url);
         int portNumber = extractPortNumber(url, usesHttps);
-        return usesHttps && portNumber == HttpsURL.DEFAULT_PORT
-            || !usesHttps && portNumber == HttpURL.DEFAULT_PORT;
+        return usesHttps && portNumber == 443
+            || !usesHttps && portNumber == 80;
     }
 
     private String urlEncode(String rawValue) {
