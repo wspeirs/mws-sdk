@@ -2493,14 +2493,31 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
     }
     
     private static boolean usesHttps(String url) {
-    	return !url.startsWith("https");
+    	try {
+			URL u = new URL(url);
+			
+			return u.getProtocol().equalsIgnoreCase("https");
+		} catch (MalformedURLException e) {
+            throw new RuntimeException(url + " is not a URL", e);
+		}
     }
 
     private static int extractPortNumber(String url, boolean usesHttps) {
     	try {
-			return new URL(url).getPort();
+    		URL u = new URL(url);
+    		int ret = u.getPort();
+    		
+    		if(ret == -1) {
+    			if(u.getProtocol().equalsIgnoreCase("https")) {
+    				ret = 443;
+    			} else {
+    				ret = 80;
+    			}
+    		}
+    		
+    		return ret;
 		} catch (MalformedURLException e) {
-            throw new RuntimeException("not a URL", e);
+            throw new RuntimeException(url + " is not a URL", e);
 		}
     }
 

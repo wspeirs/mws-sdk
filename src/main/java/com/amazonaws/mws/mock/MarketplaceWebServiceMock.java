@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * Use this to test your application without making a call to Marketplace Web Service 
  *
- * Note, current Mock Service implementation does not valiadate requests
+ * Note, current Mock Service implementation does not validate requests
  *
  */
 public  class MarketplaceWebServiceMock implements MarketplaceWebService {
