@@ -2013,7 +2013,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
         return sb.toString();
     }
     
-    private <T> T invoke(Class<T> clazz, Map<String, String> parameters)
+    public <T> T invoke(Class<T> clazz, Map<String, String> parameters)
     throws MarketplaceWebServiceException {
         return invoke( clazz, parameters, null );
     }
