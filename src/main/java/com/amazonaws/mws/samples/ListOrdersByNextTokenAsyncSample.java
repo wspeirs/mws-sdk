@@ -30,8 +30,8 @@ import java.util.concurrent.Future;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersAsync;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersAsyncClient;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersException;
-import com.amazonaws.mws.model.ListOrdersByNextTokenRequest;
-import com.amazonaws.mws.model.ListOrdersByNextTokenResponse;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenRequest;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenResponse;
 
 /**
  * 

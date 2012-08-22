@@ -33,18 +33,18 @@ import org.xml.sax.InputSource;
 
 import com.amazonaws.mws.MarketplaceWebServiceOrders;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersException;
-import com.amazonaws.mws.model.GetOrderRequest;
-import com.amazonaws.mws.model.GetOrderResponse;
-import com.amazonaws.mws.model.GetServiceStatusRequest;
-import com.amazonaws.mws.model.GetServiceStatusResponse;
-import com.amazonaws.mws.model.ListOrderItemsByNextTokenRequest;
-import com.amazonaws.mws.model.ListOrderItemsByNextTokenResponse;
-import com.amazonaws.mws.model.ListOrderItemsRequest;
-import com.amazonaws.mws.model.ListOrderItemsResponse;
-import com.amazonaws.mws.model.ListOrdersByNextTokenRequest;
-import com.amazonaws.mws.model.ListOrdersByNextTokenResponse;
-import com.amazonaws.mws.model.ListOrdersRequest;
-import com.amazonaws.mws.model.ListOrdersResponse;
+import com.amazonaws.mws.model.orders.GetOrderRequest;
+import com.amazonaws.mws.model.orders.GetOrderResponse;
+import com.amazonaws.mws.model.orders.GetServiceStatusRequest;
+import com.amazonaws.mws.model.orders.GetServiceStatusResponse;
+import com.amazonaws.mws.model.orders.ListOrderItemsByNextTokenRequest;
+import com.amazonaws.mws.model.orders.ListOrderItemsByNextTokenResponse;
+import com.amazonaws.mws.model.orders.ListOrderItemsRequest;
+import com.amazonaws.mws.model.orders.ListOrderItemsResponse;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenRequest;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenResponse;
+import com.amazonaws.mws.model.orders.ListOrdersRequest;
+import com.amazonaws.mws.model.orders.ListOrdersResponse;
 
 /**
  *

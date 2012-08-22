@@ -14,13 +14,13 @@ import org.apache.http.HttpStatus;
 import com.amazonaws.mws.MarketplaceWebServiceOrders;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersClient;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersException;
-import com.amazonaws.mws.model.ListOrdersByNextTokenRequest;
-import com.amazonaws.mws.model.ListOrdersByNextTokenResponse;
-import com.amazonaws.mws.model.ListOrdersByNextTokenResult;
-import com.amazonaws.mws.model.ListOrdersRequest;
-import com.amazonaws.mws.model.ListOrdersResponse;
-import com.amazonaws.mws.model.ListOrdersResult;
-import com.amazonaws.mws.model.OrderList;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenRequest;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenResponse;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenResult;
+import com.amazonaws.mws.model.orders.ListOrdersRequest;
+import com.amazonaws.mws.model.orders.ListOrdersResponse;
+import com.amazonaws.mws.model.orders.ListOrdersResult;
+import com.amazonaws.mws.model.orders.OrderList;
 
 /**
  * Sample file that fetches orders created during a given time period.

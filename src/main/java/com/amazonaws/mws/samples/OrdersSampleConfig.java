@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.amazonaws.mws.MarketplaceWebServiceOrdersConfig;
-import com.amazonaws.mws.model.MarketplaceIdList;
+import com.amazonaws.mws.model.orders.MarketplaceIdList;
 
 final public class OrdersSampleConfig {
 

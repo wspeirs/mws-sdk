@@ -29,8 +29,8 @@ import java.util.concurrent.Future;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersAsync;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersAsyncClient;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersException;
-import com.amazonaws.mws.model.GetOrderRequest;
-import com.amazonaws.mws.model.GetOrderResponse;
+import com.amazonaws.mws.model.orders.GetOrderRequest;
+import com.amazonaws.mws.model.orders.GetOrderResponse;
 
 /**
  * 

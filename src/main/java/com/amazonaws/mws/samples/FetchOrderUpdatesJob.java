@@ -14,21 +14,21 @@ import org.apache.http.HttpStatus;
 import com.amazonaws.mws.MarketplaceWebServiceOrders;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersClient;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersException;
-import com.amazonaws.mws.model.ListOrderItemsByNextTokenRequest;
-import com.amazonaws.mws.model.ListOrderItemsByNextTokenResponse;
-import com.amazonaws.mws.model.ListOrderItemsByNextTokenResult;
-import com.amazonaws.mws.model.ListOrderItemsRequest;
-import com.amazonaws.mws.model.ListOrderItemsResponse;
-import com.amazonaws.mws.model.ListOrderItemsResult;
-import com.amazonaws.mws.model.ListOrdersByNextTokenRequest;
-import com.amazonaws.mws.model.ListOrdersByNextTokenResponse;
-import com.amazonaws.mws.model.ListOrdersByNextTokenResult;
-import com.amazonaws.mws.model.ListOrdersRequest;
-import com.amazonaws.mws.model.ListOrdersResponse;
-import com.amazonaws.mws.model.ListOrdersResult;
-import com.amazonaws.mws.model.MarketplaceIdList;
-import com.amazonaws.mws.model.Order;
-import com.amazonaws.mws.model.OrderItem;
+import com.amazonaws.mws.model.orders.ListOrderItemsByNextTokenRequest;
+import com.amazonaws.mws.model.orders.ListOrderItemsByNextTokenResponse;
+import com.amazonaws.mws.model.orders.ListOrderItemsByNextTokenResult;
+import com.amazonaws.mws.model.orders.ListOrderItemsRequest;
+import com.amazonaws.mws.model.orders.ListOrderItemsResponse;
+import com.amazonaws.mws.model.orders.ListOrderItemsResult;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenRequest;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenResponse;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenResult;
+import com.amazonaws.mws.model.orders.ListOrdersRequest;
+import com.amazonaws.mws.model.orders.ListOrdersResponse;
+import com.amazonaws.mws.model.orders.ListOrdersResult;
+import com.amazonaws.mws.model.orders.MarketplaceIdList;
+import com.amazonaws.mws.model.orders.Order;
+import com.amazonaws.mws.model.orders.OrderItem;
 
 /**
  * This sample illustrates continuous order updates retrieval. It contains a

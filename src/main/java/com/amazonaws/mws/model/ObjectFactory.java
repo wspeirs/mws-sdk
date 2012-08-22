@@ -3,6 +3,9 @@ package com.amazonaws.mws.model;
 
 import javax.xml.bind.annotation.XmlRegistry;
 
+import com.amazonaws.mws.model.orders.Error;
+import com.amazonaws.mws.model.orders.ErrorResponse;
+
 
 /**
  * This object contains factory methods for each 

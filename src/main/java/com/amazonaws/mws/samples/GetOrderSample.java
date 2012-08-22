@@ -24,14 +24,14 @@ package com.amazonaws.mws.samples;
 import com.amazonaws.mws.MarketplaceWebServiceOrders;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersClient;
 import com.amazonaws.mws.MarketplaceWebServiceOrdersException;
-import com.amazonaws.mws.model.Address;
-import com.amazonaws.mws.model.GetOrderRequest;
-import com.amazonaws.mws.model.GetOrderResponse;
-import com.amazonaws.mws.model.GetOrderResult;
-import com.amazonaws.mws.model.Money;
-import com.amazonaws.mws.model.Order;
-import com.amazonaws.mws.model.OrderList;
-import com.amazonaws.mws.model.ResponseMetadata;
+import com.amazonaws.mws.model.orders.Address;
+import com.amazonaws.mws.model.orders.GetOrderRequest;
+import com.amazonaws.mws.model.orders.GetOrderResponse;
+import com.amazonaws.mws.model.orders.GetOrderResult;
+import com.amazonaws.mws.model.orders.Money;
+import com.amazonaws.mws.model.orders.Order;
+import com.amazonaws.mws.model.orders.OrderList;
+import com.amazonaws.mws.model.orders.ResponseMetadata;
 
 /**
  * 

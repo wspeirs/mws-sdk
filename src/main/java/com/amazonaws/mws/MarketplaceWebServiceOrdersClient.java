@@ -79,25 +79,25 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.params.SyncBasicHttpParams;
 import org.apache.http.protocol.HttpContext;
 
-import com.amazonaws.mws.model.ErrorResponse;
-import com.amazonaws.mws.model.FulfillmentChannelEnum;
-import com.amazonaws.mws.model.FulfillmentChannelList;
-import com.amazonaws.mws.model.GetOrderRequest;
-import com.amazonaws.mws.model.GetOrderResponse;
-import com.amazonaws.mws.model.GetServiceStatusRequest;
-import com.amazonaws.mws.model.GetServiceStatusResponse;
-import com.amazonaws.mws.model.ListOrderItemsByNextTokenRequest;
-import com.amazonaws.mws.model.ListOrderItemsByNextTokenResponse;
-import com.amazonaws.mws.model.ListOrderItemsRequest;
-import com.amazonaws.mws.model.ListOrderItemsResponse;
-import com.amazonaws.mws.model.ListOrdersByNextTokenRequest;
-import com.amazonaws.mws.model.ListOrdersByNextTokenResponse;
-import com.amazonaws.mws.model.ListOrdersRequest;
-import com.amazonaws.mws.model.ListOrdersResponse;
-import com.amazonaws.mws.model.MarketplaceIdList;
-import com.amazonaws.mws.model.OrderIdList;
-import com.amazonaws.mws.model.OrderStatusEnum;
-import com.amazonaws.mws.model.OrderStatusList;
+import com.amazonaws.mws.model.orders.ErrorResponse;
+import com.amazonaws.mws.model.orders.FulfillmentChannelEnum;
+import com.amazonaws.mws.model.orders.FulfillmentChannelList;
+import com.amazonaws.mws.model.orders.GetOrderRequest;
+import com.amazonaws.mws.model.orders.GetOrderResponse;
+import com.amazonaws.mws.model.orders.GetServiceStatusRequest;
+import com.amazonaws.mws.model.orders.GetServiceStatusResponse;
+import com.amazonaws.mws.model.orders.ListOrderItemsByNextTokenRequest;
+import com.amazonaws.mws.model.orders.ListOrderItemsByNextTokenResponse;
+import com.amazonaws.mws.model.orders.ListOrderItemsRequest;
+import com.amazonaws.mws.model.orders.ListOrderItemsResponse;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenRequest;
+import com.amazonaws.mws.model.orders.ListOrdersByNextTokenResponse;
+import com.amazonaws.mws.model.orders.ListOrdersRequest;
+import com.amazonaws.mws.model.orders.ListOrdersResponse;
+import com.amazonaws.mws.model.orders.MarketplaceIdList;
+import com.amazonaws.mws.model.orders.OrderIdList;
+import com.amazonaws.mws.model.orders.OrderStatusEnum;
+import com.amazonaws.mws.model.orders.OrderStatusList;
 
 /**
  * This contains the Order Retrieval API section of the Marketplace Web Service.
@@ -135,7 +135,7 @@ public class MarketplaceWebServiceOrdersClient implements MarketplaceWebServiceO
     /** Initialize JAXBContext and Unmarshaller **/
     static {
 	try {
-	    jaxbContext = JAXBContext.newInstance("com.amazonservices.mws.orders.model",
+	    jaxbContext = JAXBContext.newInstance("com.amazonaws.mws.model",
 		                                  MarketplaceWebServiceOrders.class.getClassLoader());
 	} catch (JAXBException ex) {
 	    throw new ExceptionInInitializerError(ex);
@@ -479,6 +479,7 @@ public class MarketplaceWebServiceOrdersClient implements MarketplaceWebServiceO
 
 		    /* Submit request */
 		    httpResponse = httpClient.execute(method);
+		    status = httpResponse.getStatusLine().getStatusCode();
 
 		    /* Consume response stream */
 		    responseBodyString = getResponsBodyAsString(httpResponse.getEntity().getContent());
@@ -520,7 +521,7 @@ public class MarketplaceWebServiceOrdersClient implements MarketplaceWebServiceO
 
 			    log.debug("Unmarshalled response into the ErrorResponse type.");
 
-			    com.amazonaws.mws.model.Error error = errorResponse
+			    com.amazonaws.mws.model.orders.Error error = errorResponse
 				    .getError().get(0);
 			    if (status == HttpStatus.SC_SERVICE_UNAVAILABLE
 				    && !(error.getCode()

@@ -99,7 +99,6 @@ import com.amazonaws.mws.model.CancelFeedSubmissionsRequest;
 import com.amazonaws.mws.model.CancelFeedSubmissionsResponse;
 import com.amazonaws.mws.model.CancelReportRequestsRequest;
 import com.amazonaws.mws.model.CancelReportRequestsResponse;
-import com.amazonaws.mws.model.ErrorResponse;
 import com.amazonaws.mws.model.GetFeedSubmissionCountRequest;
 import com.amazonaws.mws.model.GetFeedSubmissionCountResponse;
 import com.amazonaws.mws.model.GetFeedSubmissionListByNextTokenRequest;
@@ -143,6 +142,7 @@ import com.amazonaws.mws.model.SubmitFeedResponse;
 import com.amazonaws.mws.model.TypeList;
 import com.amazonaws.mws.model.UpdateReportAcknowledgementsRequest;
 import com.amazonaws.mws.model.UpdateReportAcknowledgementsResponse;
+import com.amazonaws.mws.model.orders.ErrorResponse;
 
 /**
  * The Amazon Marketplace Web Service contain APIs for inventory and order management.
@@ -2217,7 +2217,7 @@ public  class MarketplaceWebServiceClient implements MarketplaceWebService {
 
                             log.debug("Unmarshalled response into the ErrorResponse type.");
 
-                            com.amazonaws.mws.model.Error error = errorResponse.getError().get(0);
+                            com.amazonaws.mws.model.orders.Error error = errorResponse.getError().get(0);
                             
                             if(httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_SERVICE_UNAVAILABLE  
                             		&& !(error.getCode().equals("RequestThrottled"))
